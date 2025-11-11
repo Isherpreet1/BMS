@@ -1,0 +1,177 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <limits>
+
+using namespace std;
+
+class Account {
+public:
+    long accNumber;
+    string name;
+    string accType;
+    double balance;
+
+    void openAccount() {
+        cout << "Enter Account No: ";
+        while (!(cin >> accNumber)) {
+            cout << "Invalid input. Please enter a number: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+        cout << "Enter Name: ";
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        getline(cin, name);
+        cout << "Enter Account Type (Savings/Current): ";
+        cin >> accType;
+        cout << "Enter Initial Balance: ";
+        while (!(cin >> balance)) {
+            cout << "Invalid input. Please enter a number: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+
+    void display() {
+        cout << "\n--- Account Details ---\n"
+             << "Account No: " << accNumber << endl
+             << "Name: " << name << endl
+             << "Type: " << accType << endl
+             << "Balance: " << balance << endl;
+    }
+};
+
+Account accounts[100];
+int countAcc = 0;
+
+void addAccount();
+void saveToFile();
+void loadFromFile();
+int searchAccount(long accNum);
+void depositMoney();
+void withdrawMoney();
+
+int main() {
+    loadFromFile();
+    int choice;
+    do {
+        cout << "\n--- Banking Management System ---\n"
+             << "1. Open New Account\n"
+             << "2. Deposit Money\n"
+             << "3. Withdraw Money\n"
+             << "4. Exit\n"
+             << "Enter your choice: ";
+        
+        while (!(cin >> choice)) {
+            cout << "Invalid choice. Please enter a number (1-4): ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+        switch (choice) {
+            case 1: addAccount(); break;
+            case 2: depositMoney(); break;
+            case 3: withdrawMoney(); break;
+            case 4:
+                saveToFile();
+                cout << "Thank you for using the system.\n";
+                break;
+            default: cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 4);
+    return 0;
+}
+
+void addAccount() {
+    if (countAcc >= 100) {
+        cout << "Cannot add more accounts. System is full.\n";
+        return;
+    }
+    accounts[countAcc].openAccount();
+    countAcc++;
+    cout << "Account Created Successfully!\n";
+}
+
+void saveToFile() {
+    ofstream file("accounts.txt");
+    if (!file) {
+        cout << "Error opening file for writing!\n";
+        return;
+    }
+    for (int i = 0; i < countAcc; i++) {
+        file << accounts[i].accNumber << endl
+             << accounts[i].name << endl
+             << accounts[i].accType << endl
+             << accounts[i].balance << endl;
+    }
+    file.close();
+    cout << "Records Saved!\n";
+}
+
+void loadFromFile() {
+    ifstream file("accounts.txt");
+    if (!file) {
+        cout << "No existing records file found. Starting fresh.\n";
+        return;
+    }
+    while (countAcc < 100 && (file >> accounts[countAcc].accNumber)) {
+        file.ignore(numeric_limits<streamsize>::max(), '\n');
+        getline(file, accounts[countAcc].name);
+        if (!(file >> accounts[countAcc].accType)) break;
+        if (!(file >> accounts[countAcc].balance)) break;
+        countAcc++;
+    }
+    file.close();
+    cout << "Loaded " << countAcc << " records.\n";
+}
+
+int searchAccount(long accNum) {
+    for (int i = 0; i < countAcc; i++) {
+        if (accounts[i].accNumber == accNum) return i;
+    }
+    return -1;
+}
+
+void depositMoney() {
+    long num;
+    double amount;
+    cout << "Enter account number to deposit: ";
+    cin >> num;
+    int index = searchAccount(num);
+    if (index != -1) {
+        cout << "Enter amount to deposit: ";
+        cin >> amount;
+        if (amount <= 0) {
+            cout << "Invalid amount.\n";
+            return;
+        }
+        accounts[index].balance += amount;
+        cout << "Deposit Successful! New Balance: " << accounts[index].balance << endl;
+    } else {
+        cout << "Account not found.\n";
+    }
+}
+
+void withdrawMoney() {
+    long num;
+    double amount;
+    cout << "Enter account number to withdraw: ";
+    cin >> num;
+    int index = searchAccount(num);
+    if (index != -1) {
+        cout << "Enter amount to withdraw: ";
+        cin >> amount;
+        if (amount <= 0) {
+            cout << "Invalid amount.\n";
+            return;
+        }
+        if (amount > accounts[index].balance) {
+            cout << "Insufficient funds. Available balance: " << accounts[index].balance << endl;
+        } else {
+            accounts[index].balance -= amount;
+            cout << "Withdrawal Successful! New Balance: " << accounts[index].balance << endl;
+        }
+    } else {
+        cout << "Account not found.\n";
+    }
+}
+
